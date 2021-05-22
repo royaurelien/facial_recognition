@@ -1,12 +1,16 @@
 import csv
 import os
 import uuid
+from face_recognition.api import face_locations
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 import logging
 from numpy.polynomial.polynomial import Polynomial
 import matplotlib.pyplot as plt
 import hashlib
+import dlib
+
+import face_recognition as face
 
 _logger = logging.getLogger(__name__)
 
@@ -161,3 +165,42 @@ def save_csv(path, fieldnames, lines, append=True):
 
         for line in lines:
             writer.writerow(line)
+
+def process_file(path, detector, **options):
+
+    upsample = options.get('upsample', 1)
+
+    logging.info(">> {}".format(path))
+
+    # picture = dlib.load_rgb_image(path)
+
+    picture = face.load_image_file(path)
+    picture = resize(picture)
+
+    # search for face locations
+    face_locations = face.face_locations(picture,number_of_times_to_upsample=upsample)
+    # face_locations = detector(picture, upsample)
+    pil_image = Image.fromarray(picture)
+    md5 = int(hashlib.md5(pil_image.tobytes()).hexdigest(), base=16)
+    # face_locations = []
+    del pil_image
+
+    logging.debug("\tCalculating md5 hash: {}".format(md5))
+
+    return picture, md5, face_locations
+
+
+def multi_process_file(files, detector, options):
+    images, list_of_hash, list_of_locations = [], [], []
+
+    for filename in files:
+        image_array, image_hash, face_locations = process_file(filename, detector, **options)
+
+        images.append(image_array)
+        list_of_hash.append(image_hash)
+        list_of_locations.append(face_locations)
+        del image_array
+        del image_hash
+        del face_locations
+
+    return images, list_of_hash, list_of_locations
