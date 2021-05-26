@@ -9,6 +9,7 @@ from numpy.polynomial.polynomial import Polynomial
 import matplotlib.pyplot as plt
 import hashlib
 import dlib
+import time
 
 import face_recognition as face
 
@@ -204,3 +205,81 @@ def multi_process_file(files, detector, options):
         del face_locations
 
     return images, list_of_hash, list_of_locations
+
+def sort_nested_list(data):
+    return sorted([sorted(items) for items in data])
+
+def group_by_set(data_list, *args, **kwargs):
+
+    count = len(data_list)
+    groups = []
+
+    for elem in data_list:
+        match = False
+        for group in groups:
+            items = set(elem)
+            res = not group.isdisjoint(items)
+
+            if res:
+                group.update(items)
+                match = True
+                break
+        if not match:
+            groups.append(set(elem))
+
+    for group in groups:
+        for gg in groups:
+            if gg == group:
+                continue
+            res = not group.isdisjoint(gg)
+            if res:
+                group.update(gg)
+                groups.remove(gg)
+
+    tmp = [list(group) for group in groups]
+    return sort_nested_list(tmp)
+
+def group_by_list(data_list, max_iteration=4):
+
+    current_list = list(data_list)
+    count = len(current_list)
+
+    for i in range(max_iteration):
+        # logging.debug("Iteration {}/{} items:{}".format((i+1),max_iteration,len(current_list)))
+        for rel in current_list:
+            r = [e for e in current_list for i in range(len(rel)) if rel[i] in e and rel != e]
+
+            # logging.debug("work on: {}".format(rel))
+            # logging.debug("find: {}".format(r))
+
+            for elem in r:
+                rel += elem
+
+            rel = list(set(rel))
+            for elem in r:
+                if elem == rel:
+                    continue
+
+                # logging.debug("update with: {}".format(rel))
+                rel = list(set(rel))
+                # logging.debug("remove duplicates: {}".format(rel))
+
+                if elem in current_list and elem != rel:
+                    # logging.debug("remove other elems: {}".format(elem))
+                    current_list.remove(elem)
+
+        if len(current_list) != count:
+            count = len(current_list)
+        else:
+            # logging.debug("stop iteration at {}".format(i))
+            break
+
+    tmp = [list(set(items)) for items in current_list]
+    return sort_nested_list(tmp)
+    # return current_list
+
+def convert_seconds(seconds, strft="%H:%M:%S"):
+    return time.strftime(strft, time.gmtime(seconds))
+
+def print_timer(seconds):
+    print("Execution time: {}".format(convert_seconds(seconds)))

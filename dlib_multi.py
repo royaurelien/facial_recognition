@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     # pbar.close()
     stop = time.time() - start
-    print("Execution time: {}".format(stop))
+    tools.print_timer(stop)
 
     data = []
 
@@ -357,4 +357,4 @@ if args.graph_result:
     graph.show('mygraph.html')
 
 stop = time.time() - start
-print("Execution time: {}".format(stop))
+tools.print_timer(stop)
